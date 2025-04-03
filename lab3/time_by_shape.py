@@ -3,7 +3,7 @@ from data import *
 data = df.groupby("shape")["duration (seconds)"].median().sort_values(ascending=False)
 
 plt.figure(figsize=(8, 6))
-data.plot(kind="bar", color=getColors(len(data)))
+plt.bar(data.index, data.values, color=getColors(len(data)))
 
 plt.ylabel("Форма НЛО", fontsize=12)
 plt.xlabel("Медианная длительность (секунды)", fontsize=12)
