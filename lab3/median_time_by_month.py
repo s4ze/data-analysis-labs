@@ -19,10 +19,8 @@ MONTH_NAMES = [
 
 def convert_datetime(dt_str):
     try:
-        # Пробуем стандартный парсинг
         return pd.to_datetime(dt_str, format="%m/%d/%Y %H:%M")
     except ValueError:
-        # Обрабатываем случай с 24:00
         if "24:00" in dt_str:
             date_part, _ = dt_str.split(" ")
             dt = pd.to_datetime(date_part, format="%m/%d/%Y") + pd.Timedelta(days=1)
@@ -30,7 +28,6 @@ def convert_datetime(dt_str):
         return pd.NaT
 
 
-# Применяем функцию и извлекаем месяц
 df["datetime_parsed"] = df["datetime"].apply(convert_datetime)
 df["month"] = df["datetime_parsed"].dt.month
 monthly_median = (
