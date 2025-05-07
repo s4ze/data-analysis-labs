@@ -1,0 +1,1598 @@
+| Please choose a lesson, or type 0 to return to course menu.
+
+ 1: Principles of Analytic Graphs   2: Exploratory Graphs           
+ 3: Graphics Devices in R           4: Plotting Systems             
+ 5: Base Plotting System            6: Lattice Plotting System      
+ 7: Working with Colors             8: GGPlot2 Part1                
+ 9: GGPlot2 Part2                  10: GGPlot2 Extras               
+11: Hierarchical Clustering        12: K Means Clustering           
+13: Dimension Reduction            14: Clustering Example           
+15: CaseStudy                      
+
+Selection: 13
+
+| Attempting to load lesson dependencies...
+
+| Package ‘fields’ loaded correctly!
+
+| Package ‘jpeg’ loaded correctly!
+
+| Package ‘datasets’ loaded correctly!
+
+  |                                                                                        |                                                                                |   0%
+
+| Dimension_Reduction. (Slides for this and other Data Science courses may be found at
+| github https://github.com/DataScienceSpecialization/courses/. If you care to use them,
+| they must be downloaded as a zip file and viewed locally. This lesson corresponds to
+| 04_ExploratoryAnalysis/dimensionReduction.)
+
+...
+
+  |                                                                                        |=                                                                               |   1%
+| In this lesson we'll discuss principal component analysis (PCA) and singular value
+| decomposition (SVD), two important and related techniques of dimension reduction. This
+| last entails processes which finding subsets of variables in datasets that contain
+| their essences. PCA and SVD are used in both the exploratory phase and the more formal
+| modelling stage of analysis. We'll focus on the exploratory phase and briefly touch on
+| some of the underlying theory.
+
+...
+
+  |                                                                                        |==                                                                              |   2%
+| We'll begin with a motivating example - random data.
+
+...
+
+  |                                                                                        |===                                                                             |   4%
+| This is dataMatrix, a matrix of 400 random normal numbers (mean 0 and standard
+| deviation 1).  We're displaying it with the R command image. Run the R command head
+| with dataMatrix as its argument to see what dataMatrix looks like.
+
+> head(dataMatrix)
+           [,1]       [,2]       [,3]       [,4]       [,5]       [,6]       [,7]
+[1,]  0.5855288  1.1285108  0.6453831  1.5448636 -0.4876385 -1.4361457 -0.7000758
+[2,]  0.7094660 -2.3803581  1.0431436  1.3214520  0.3031512 -0.6292596 -0.5674016
+[3,] -0.1093033 -1.0602656 -0.3043691  0.3221516 -0.2419740  0.2435218 -0.2613939
+[4,] -0.4534972  0.9371405  2.4771109  1.5309551 -0.4817336  1.0583622 -1.0638850
+[5,]  0.6058875  0.8544517  0.9712207 -0.4212397 -0.9918029  0.8313488 -0.1063687
+[6,] -1.8179560  1.4607294  1.8670992 -1.1588210 -0.2806491  0.1052118  0.7711037
+           [,8]       [,9]       [,10]
+[1,] -1.5138641  0.3803157 -0.37582344
+[2,]  0.1642810  0.6051368 -1.81283376
+[3,] -0.8708652  1.0196741  0.28860021
+[4,]  1.5933290  0.4749430 -0.18962258
+[5,]  0.6465975 -2.1859464  0.01786021
+[6,]  0.3573697  0.9331922  0.65043024
+
+| Keep working like that and you'll get there!
+
+  |                                                                                        |====                                                                            |   5%
+| So we see that dataMatrix has 10 columns (and hence 40 rows) of random numbers. The
+| image here looks pretty random. Let's see how the data clusters. Run the R command
+| heatmap with dataMatrix as its only argument.
+
+> heatmap(dataMatrix)
+
+| You are amazing!
+
+  |                                                                                        |=====                                                                           |   6%
+| We can see that even with the clustering that heatmap provides, permuting the rows
+| (observations) and columns (variables) independently, the data still looks random.
+
+...
+
+  |                                                                                        |======                                                                          |   7%
+| Let's add a pattern to the data. We've put some R code in the file addPatt.R for you.
+| Run the command myedit with the single argument "addPatt.R" (make sure to use the
+| quotation marks) to see the code. You might have to click your cursor in the console
+| after you do this to keep from accidentally changing the file.
+
+> myedit("addPatt.R")
+
+| That's correct!
+
+  |                                                                                        |=======                                                                         |   8%
+| Look at the code. Will every row of the matrix have a pattern added to it?
+
+1: Yes
+2: No
+
+Selection: 2
+
+| Nice work!
+
+  |                                                                                        |========                                                                        |  10%
+| So whether or not a row gets modified by a pattern is determined by a coin flip. Will
+| the added pattern affect every column in the affected row?
+
+1: Yes
+2: No
+
+Selection: 1
+
+| That's not the answer I was looking for, but try again.
+
+| The expression rep(c(0,3),each=5) creates the 10-long vector (0,0,0,0,0,3,3,3,3,3)
+| which is added to the rows chosen by the coin flip.
+
+1: No
+2: Yes
+
+Selection: 1
+
+| You got it!
+
+  |                                                                                        |=========                                                                       |  11%
+| So in rows affected by the coin flip, the 5 left columns will still have a mean of 0
+| but the right 5 columns will have a mean closer to 3.
+
+...
+
+  |                                                                                        |==========                                                                      |  12%
+| Now to execute this code, run the R command source with 2 arguments. The first is the
+| filename (in quotes), "addPatt.R", and the second is the argument local set equal to
+| TRUE.
+
+> source("addPatt.r", local=TRUE)
+
+| Keep trying! Or, type info() for more options.
+
+| Type source("addPatt.R", local=TRUE) at the command prompt.
+
+> source("addPatt.R", local=TRUE)
+
+| That's correct!
+
+  |                                                                                        |===========                                                                     |  13%
+| Here's the image of the altered dataMatrix after the pattern has been added. The
+| pattern is clearly visible in the columns of the matrix. The right half is yellower or
+| hotter, indicating higher values in the matrix.
+
+...
+
+  |                                                                                        |============                                                                    |  14%
+| Now run the R command heatmap again with dataMatrix as its only argument. This will
+| perform a hierarchical cluster analysis on the matrix.
+
+> heatmap(dataMatrix)
+
+| You got it!
+
+  |                                                                                        |=============                                                                   |  16%
+| Again we see the pattern in the columns of the matrix. As shown in the dendrogram at
+| the top of the display, these split into 2 clusters, the lower numbered columns (1
+| through 5) and the higher numbered ones (6 through 10). Recall from the code in
+| addPatt.R that for rows selected by the coinflip the last 5 columns had 3 added to
+| them. The rows still look random.
+
+...
+
+  |                                                                                        |=============                                                                   |  17%
+| Now consider this picture. On the left is an image similar to the heatmap of dataMatix
+| you just plotted. It is an image plot of the output of hclust(), a hierarchical
+| clustering function applied to dataMatrix. Yellow indicates "hotter" or higher values
+| than red. This is consistent with the pattern we applied to the data (increasing the
+| values for some of the rightmost columns).
+
+...
+
+  |                                                                                        |==============                                                                  |  18%
+| The middle display shows the mean of each of the 40 rows (along the x-axis). The rows
+| are shown in the same order as the rows of the heat matrix on the left. The rightmost
+| display shows the mean of each of the 10 columns. Here the column numbers are along the
+| x-axis and their means along the y.
+
+...
+
+  |                                                                                        |===============                                                                 |  19%
+| We see immediately the connection between the yellow (hotter) portion of the cluster
+| image and the higher row means, both in the upper right portion of the displays.
+| Similarly, the higher valued column means are in the right half of that display and
+| lower colummn means are in the left half.
+
+...
+
+  |                                                                                        |================                                                                |  20%
+| Now we'll talk a little theory. Suppose you have 1000's of multivariate variables X_1,
+| ... ,X_n. By multivariate we mean that each X_i contains many components, i.e., X_i =
+| (X_{i1}, ... , X_{im}. However, these variables (observations) and their components
+| might be correlated to one another.
+
+...
+
+  |                                                                                        |=================                                                               |  22%
+| Which of the following would be an example of variables correlated to one another?
+
+1: Today's weather and a butterfly's wing position
+2: Heights and weights of members of a family
+3: The depth of the Atlantic Ocean and what you eat for breakfast
+
+Selection: 2
+
+| Keep up the great work!
+
+  |                                                                                        |==================                                                              |  23%
+| As data scientists, we'd like to find a smaller set of multivariate variables that are
+| uncorrelated AND explain as much variance (or variability) of the data as possible.
+| This is a statistical approach.
+
+...
+
+  |                                                                                        |===================                                                             |  24%
+| In other words, we'd like to find the best matrix created with fewer variables (that
+| is, a lower rank matrix) that explains the original data. This is related to data
+| compression.
+
+...
+
+  |                                                                                        |====================                                                            |  25%
+| Two related solutions to these problems are PCA which stands for Principal Component
+| Analysis and SVD, Singular Value Decomposition. This latter simply means that we
+| express a matrix X of observations (rows) and variables (columns) as the product of 3
+| other matrices, i.e., X=UDV^t. This last term (V^t) represents the transpose of the
+| matrix V.
+
+...
+
+  |                                                                                        |=====================                                                           |  27%
+| Here U and V each have orthogonal (uncorrelated) columns. U's columns are the left
+| singular vectors of X and V's columns are the right singular vectors of X.  D is a
+| diagonal matrix, by which we mean that all of its entries not on the diagonal are 0.
+| The diagonal entries of D are the singular values of X.
+
+...
+
+  |                                                                                        |======================                                                          |  28%
+| To illustrate this idea we created a simple example matrix called mat. Look at it now.
+
+> mat
+     [,1] [,2] [,3]
+[1,]    1    2    3
+[2,]    2    5    7
+
+| Perseverance, that's the answer.
+
+  |                                                                                        |=======================                                                         |  29%
+| So mat is a 2 by 3 matrix. Lucky for us R provides a function to perform singular value
+| decomposition. It's called, unsurprisingly, svd. Call it now with a single argument,
+| mat.
+
+> svd(mat)
+$d
+[1] 9.5899624 0.1806108
+
+$u
+           [,1]       [,2]
+[1,] -0.3897782 -0.9209087
+[2,] -0.9209087  0.3897782
+
+$v
+           [,1]       [,2]
+[1,] -0.2327012 -0.7826345
+[2,] -0.5614308  0.5928424
+[3,] -0.7941320 -0.1897921
+
+
+| Keep working like that and you'll get there!
+
+  |                                                                                        |========================                                                        |  30%
+| We see that the function returns 3 components, d which holds 2 diagonal elements, u, a
+| 2 by 2 matrix, and v, a 3 by 2 matrix. We stored the diagonal entries in a diagonal
+| matrix for you, diag, and we also stored u and v in the variables matu and matv
+| respectively. Multiply matu by diag by t(matv) to see what you get. (This last
+| expression represents the transpose of matv in R). Recall that in R matrix
+| multiplication requires you to use the operator %*%.
+
+> matu%*%diag%*%t(matv)
+     [,1] [,2] [,3]
+[1,]    1    2    3
+[2,]    2    5    7
+
+| All that practice is paying off!
+
+  |                                                                                        |=========================                                                       |  31%
+| So we did in fact get mat back. That's a relief! Note that this type of decomposition
+| is NOT unique.
+
+...
+
+  |                                                                                        |==========================                                                      |  33%
+| Now we'll talk a little about PCA, Principal Component Analysis, "a simple,
+| non-parametric method for extracting relevant information from confusing data sets."
+| We're quoting here from a very nice concise paper on this subject which can be found at
+| http://arxiv.org/pdf/1404.1100.pdf. The paper by Jonathon Shlens of Google Research is
+| called, A Tutorial on Principal Component Analysis.
+
+...
+
+  |                                                                                        |===========================                                                     |  34%
+| Basically, PCA is a method to reduce a high-dimensional data set to its essential
+| elements (not lose information) and explain the variability in the data. We won't go
+| into the mathematical details here, (R has a function to perform PCA), but you should
+| know that SVD and PCA are closely related.
+
+...
+
+  |                                                                                        |============================                                                    |  35%
+| We'll demonstrate this now. First we have to scale mat, our simple example data matrix.
+| This means that we subtract the column mean from every element and divide the result by
+| the column standard deviation. Of course R has a command, scale, that does this for
+| you. Run svd on scale of mat.
+
+> svd(scale(mat))
+$d
+[1] 1.732051 0.000000
+
+$u
+           [,1]      [,2]
+[1,] -0.7071068 0.7071068
+[2,]  0.7071068 0.7071068
+
+$v
+          [,1]       [,2]
+[1,] 0.5773503 -0.5773503
+[2,] 0.5773503  0.7886751
+[3,] 0.5773503 -0.2113249
+
+
+| Perseverance, that's the answer.
+
+  |                                                                                        |=============================                                                   |  36%
+| Now run the R program prcomp on scale(mat). This will give you the principal components
+| of mat. See if they look familiar.
+
+> prcomp(scale(mat))
+Standard deviations (1, .., p=2):
+[1] 1.732051 0.000000
+
+Rotation (n x k) = (3 x 2):
+           PC1        PC2
+[1,] 0.5773503 -0.5773503
+[2,] 0.5773503  0.7886751
+[3,] 0.5773503 -0.2113249
+
+| Great job!
+
+  |                                                                                        |==============================                                                  |  37%
+| Notice that the principal components of the scaled matrix, shown in the Rotation
+| component of the prcomp output, ARE the columns of V, the right singular values. Thus,
+| PCA of a scaled matrix yields the V matrix (right singular vectors) of the same scaled
+| matrix.
+
+...
+
+  |                                                                                        |===============================                                                 |  39%
+| Now that we covered the theory let's return to our bigger matrix of random data into
+| which we had added a fixed pattern for some rows selected by coinflips. The pattern
+| effectively shifted the means of the rows and columns.
+
+...
+
+  |                                                                                        |================================                                                |  40%
+| Here's a picture showing the relationship between PCA and SVD for that bigger matrix.
+| We've plotted 10 points (5 are squished together in the bottom left corner). The
+| x-coordinates are the elements of the first principal component (output from prcomp),
+| and the y-coordinates are the elements of the first column of V, the first right
+| singular vector (gotten from running svd). We see that the points all lie on the 45
+| degree line represented by the equation y=x.  So the first column of V IS the first
+| principal component of our bigger data matrix.
+
+...
+
+  |                                                                                        |=================================                                               |  41%
+| To prove we're not making this up, we've run svd on dataMatrix and stored the result in
+| the object svd1. This has 3 components, d, u and v. look at the first column of V now.
+| It can be viewed by using the svd1$v[,1] notation.
+
+> svd1$v[,1]
+ [1] -0.02246261  0.11039272  0.03701406  0.06608439 -0.10303890 -0.43850119 -0.44348771
+ [8] -0.43988743 -0.43991197 -0.44155014
+
+| Keep working like that and you'll get there!
+
+  |                                                                                        |==================================                                              |  42%
+| See how these values correspond to those plotted? Five of the entries are slightly to
+| the left of the point (-0.4,-0.4), two more are negative (to the left of (0,0)), and
+| three are positive (to the right of (0,0)).
+
+...
+
+  |                                                                                        |===================================                                             |  43%
+| Here we again show the clustered data matrix on the left. Next to it we've plotted the
+| first column of the U matrix associated with the scaled data matrix. This is the first
+| LEFT singular vector and it's associated with the ROW means of the clustered data. You
+| can see the clear separation between the top 24 (around -0.2) row means and the bottom
+| 16 (around 0.2). We don't show them but note that the other columns of U don't show
+| this pattern so clearly.
+
+...
+
+  |                                                                                        |====================================                                            |  45%
+| The rightmost display shows the first column of the V matrix associated with the scaled
+| and clustered data matrix. This is the first RIGHT singular vector and it's associated
+| with the COLUMN means of the clustered data. You can see the clear separation between
+| the left 5 column means (between -0.1 and 0.1) and the right 5 column means (all below
+| -0.4). As with the left singular vectors, the other columns of V don't show this
+| pattern as clearly as this first one does.
+
+...
+
+  |                                                                                        |=====================================                                           |  46%
+| So the singular value decomposition automatically picked up these patterns, the
+| differences in the row and column means.
+
+...
+
+  |                                                                                        |======================================                                          |  47%
+| Why were the first columns of both the U and V matrices so special?  Well as it
+| happens, the D matrix of the SVD explains this phenomenon. It is an aspect of SVD
+| called variance explained. Recall that D is the diagonal matrix sandwiched in between U
+| and V^t in the SVD representation of the data matrix. The diagonal entries of D are
+| like weights for the U and V columns accounting for the variation in the data. They're
+| given in decreasing order from highest to lowest. Look at these diagonal entries now.
+| Recall that they're stored in svd1$d.
+
+> 
+> svd1$d
+ [1] 13.604477  7.742891  6.612374  6.231890  5.646287  4.339207  2.262157  1.725314
+ [9]  1.399832  1.281808
+
+| Perseverance, that's the answer.
+
+  |                                                                                        |=======================================                                         |  48%
+| Here's a display of these values (on the left). The first one (12.46) is significantly
+| bigger than the others. Since we don't have any units specified, to the right we've
+| plotted the proportion of the variance each entry represents. We see that the first
+| entry accounts for about 40% of the variance in the data. This explains why the first
+| columns of the U and V matrices respectively showed the distinctive patterns in the row
+| and column means so clearly.
+
+...
+
+  |                                                                                        |========================================                                        |  49%
+| Now we'll show you another simple example of how SVD explains variance. We've created a
+| 40 by 10 matrix, constantMatrix. Use the R command head with constantMatrix as its
+| argument to see the top rows.
+
+> head(constantMatrix)
+     [,1] [,2] [,3] [,4] [,5] [,6] [,7] [,8] [,9] [,10]
+[1,]    0    0    0    0    0    1    1    1    1     1
+[2,]    0    0    0    0    0    1    1    1    1     1
+[3,]    0    0    0    0    0    1    1    1    1     1
+[4,]    0    0    0    0    0    1    1    1    1     1
+[5,]    0    0    0    0    0    1    1    1    1     1
+[6,]    0    0    0    0    0    1    1    1    1     1
+
+| You got it right!
+
+  |                                                                                        |========================================                                        |  51%
+| The rest of the rows look just like these. You can see that the left 5 columns are all
+| 0's and the right 5 columns are all 1's. We've run svd with constantMatrix as its
+| argument for you and stored the result in svd2. Look at the diagonal component, d, of
+| svd2 now.
+
+> d
+Error: object 'd' not found
+> svd2
+$d
+ [1] 1.414214e+01 1.293147e-15 2.515225e-16 8.585334e-31 1.003214e-31 2.468937e-32
+ [7] 2.031486e-46 4.156351e-47 1.537970e-61 0.000000e+00
+
+$u
+            [,1]         [,2]       [,3]          [,4]          [,5]          [,6]
+ [1,] -0.1581139  0.189788078 -0.3728009 -5.236719e-03  7.905279e-01 -3.894586e-01
+ [2,] -0.1581139  0.189788078 -0.3728009  6.947673e-03  2.068516e-01  8.264532e-01
+ [3,] -0.1581139  0.189788078 -0.3728009  3.146358e-03 -3.538211e-01  1.145304e-01
+ [4,] -0.1581139  0.189788078 -0.3728009 -2.428656e-03 -3.217792e-01 -2.757625e-01
+ [5,] -0.1581139  0.189788078 -0.3728009 -2.428656e-03 -3.217792e-01 -2.757625e-01
+ [6,] -0.1581139 -0.905453924 -0.3938949  1.368008e-15 -1.572176e-16  5.688628e-17
+ [7,] -0.1581139 -0.001279014  0.0664088 -9.851364e-01 -2.219631e-03  9.341215e-03
+ [8,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+ [9,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[10,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[11,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[12,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[13,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[14,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[15,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[16,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[17,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[18,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[19,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[20,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[21,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[22,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[23,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[24,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[25,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[26,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[27,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[28,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[29,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[30,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[31,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[32,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[33,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[34,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[35,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[36,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[37,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[38,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[39,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+[40,] -0.1581139 -0.001279014  0.0664088  2.985262e-02  6.726153e-05 -2.830671e-04
+               [,7]          [,8]          [,9]         [,10]
+ [1,] -1.132583e-03 -1.527689e-01 -4.246818e-04  4.528830e-03
+ [2,]  2.017690e-03  2.721570e-01  7.565682e-04 -8.068086e-03
+ [3,] -6.027757e-03 -8.130567e-01 -2.260213e-03  2.410304e-02
+ [4,]  6.842968e-02  3.253931e-01  6.666457e-02 -7.109148e-01
+ [5,] -6.328703e-02  3.682754e-01 -6.473625e-02  6.903510e-01
+ [6,] -1.881404e-17 -2.639114e-17 -4.193923e-17  8.427848e-18
+ [7,] -1.133602e-05 -1.529064e-03 -4.250640e-06  4.532906e-05
+ [8,]  9.804247e-01 -4.486094e-03 -8.579390e-03  9.149110e-02
+ [9,] -3.063792e-02  1.879737e-04  9.802201e-01  8.903246e-02
+[10,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[11,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[12,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[13,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[14,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[15,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[16,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[17,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[18,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[19,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[20,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[21,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[22,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[23,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[24,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[25,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[26,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[27,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[28,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[29,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[30,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[31,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[32,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[33,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[34,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[35,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[36,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[37,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[38,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[39,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+[40,] -3.063792e-02  1.879737e-04 -3.134311e-02 -5.824803e-03
+
+$v
+               [,1]          [,2]          [,3]          [,4]          [,5]          [,6]
+ [1,]  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00  0.000000e+00
+ [2,]  0.000000e+00  9.853762e-02 -9.951333e-01 -1.720846e-15 -1.304837e-16 -1.841382e-16
+ [3,]  0.000000e+00 -3.330669e-16 -1.110223e-16 -1.634359e-04  9.485862e-01  3.165187e-01
+ [4,] -4.926440e-47  0.000000e+00  4.440892e-16 -3.419980e-04  3.165187e-01 -9.485862e-01
+ [5,]  1.264050e-61  0.000000e+00 -9.860761e-32 -6.245005e-17 -6.661338e-16 -4.857226e-15
+ [6,] -4.472136e-01 -8.900743e-01 -8.813472e-02 -7.525636e-16 -1.693764e-16  8.418435e-17
+ [7,] -4.472136e-01  2.225186e-01  2.203368e-02 -8.660253e-01 -2.280087e-04  2.361513e-04
+ [8,] -4.472136e-01  2.225186e-01  2.203368e-02  2.886751e-01  7.600290e-05 -7.871711e-05
+ [9,] -4.472136e-01  2.225186e-01  2.203368e-02  2.886751e-01  7.600290e-05 -7.871711e-05
+[10,] -4.472136e-01  2.225186e-01  2.203368e-02  2.886751e-01  7.600290e-05 -7.871711e-05
+               [,7]          [,8]          [,9] [,10]
+ [1,]  0.000000e+00  0.000000e+00  0.000000e+00     1
+ [2,] -2.775558e-17  2.839634e-48  2.920966e-65     0
+ [3,] -4.563407e-16 -1.887379e-15 -3.262176e-17     0
+ [4,]  8.881784e-16  4.066192e-15  5.551115e-17     0
+ [5,] -9.458346e-04 -9.999996e-01  2.775558e-17     0
+ [6,] -1.241267e-17 -3.944305e-31 -1.232595e-32     0
+ [7,]  2.620531e-16 -3.469447e-17 -3.643909e-17     0
+ [8,] -8.164962e-01  7.722707e-04 -7.296633e-16     0
+ [9,]  4.082481e-01 -3.861354e-04  7.071068e-01     0
+[10,]  4.082481e-01 -3.861354e-04 -7.071068e-01     0
+
+
+| You almost had it, but not quite. Try again. Or, type info() for more options.
+
+| Type svd2$d at the command prompt.
+
+> svd2$d
+ [1] 1.414214e+01 1.293147e-15 2.515225e-16 8.585334e-31 1.003214e-31 2.468937e-32
+ [7] 2.031486e-46 4.156351e-47 1.537970e-61 0.000000e+00
+
+| All that practice is paying off!
+
+  |                                                                                        |=========================================                                       |  52%
+| Which index holds the largest entry of the svd2$d?
+
+1: 1
+2: 10
+3: 5
+4: 9
+
+Selection: 1
+
+| That's the answer I was looking for.
+
+  |                                                                                        |==========================================                                      |  53%
+| So the first entry by far dominates the others. Here the picture on the left shows the
+| heat map of constantMatrix. You can see how the left columns differ from the right
+| ones. The middle plot shows the values of the singular values of the matrix, i.e., the
+| diagonal elements which are the entries of svd2$d. Nine of these are 0 and the first is
+| a little above 14. The third plot shows the proportion of the total each diagonal
+| element represents.
+
+...
+
+  |                                                                                        |===========================================                                     |  54%
+| According to the plot, what percentage of the total variation does the first diagonal
+| element account for?
+
+1: 100%
+2: 90%
+3: 0%
+4: 50%
+
+Selection: 4
+
+| Try again. Getting it right on the first try is boring anyway!
+
+| The first element is at 1.0. Which percent does the number 1.0 represent?
+
+1: 0%
+2: 50%
+3: 90%
+4: 100%
+
+Selection: 4
+
+| Excellent work!
+
+  |                                                                                        |============================================                                    |  55%
+| So what does this mean? Basically that the data is one-dimensional. Only 1 piece of
+| information, namely which column an entry is in, determines its value.
+
+...
+
+  |                                                                                        |=============================================                                   |  57%
+| Now let's return to our random 40 by 10 dataMatrix and consider a slightly more
+| complicated example in which we add 2 patterns to it. Again we'll choose which rows to
+| tweak using coinflips. Specifically, for each of the 40 rows we'll flip 2 coins. If the
+| first coinflip is heads, we'll add 5 to each entry in the right 5 columns of that row,
+| and if the second coinflip is heads, we'll add 5 to just the even columns of that row.
+
+...
+
+  |                                                                                        |==============================================                                  |  58%
+| So here's the image of the scaled data matrix on the left. We can see both patterns,
+| the clear difference between the left 5 and right 5 columns, but also, slightly less
+| visible, the alternating pattern of the columns. The other plots show the true patterns
+| that were added into the affected rows. The middle plot shows the true difference
+| between the left and right columns, while the rightmost plot shows the true difference
+| between the odd numbered and even-numbered columns.
+
+...
+
+  |                                                                                        |===============================================                                 |  59%
+| The question is, "Can our analysis detect these patterns just from the data?" Let's see
+| what SVD shows. Since we're interested in patterns on columns we'll look at the first
+| two right singular vectors (columns of V) to see if they show any evidence of the
+| patterns.
+
+...
+
+  |                                                                                        |================================================                                |  60%
+| Here we see the 2 right singular vectors plotted next to the image of the data matrix.
+| The middle plot shows the first column of V and the rightmost plot the second. The
+| middle plot does show that the last 5 columns have higher entries than the first 5.
+| This picks up, or at least alludes to, the first pattern we added in which affected the
+| last 5 columns of the matrix. The rightmost plot, showing the second column of V, looks
+| more random. However, closer inspection shows that the entries alternate or bounce up
+| and down as you move from left to right. This hints at the second pattern we added in
+| which affected only even columns of selected rows.
+
+...
+
+  |                                                                                        |=================================================                               |  61%
+| To see this more closely, look at the first 2 columns of the v component. We stored the
+| SVD output in the svd object svd2.
+
+> 
+> 
+> svd2
+$d
+ [1] 14.0256081  8.4908803  6.4487478  6.1971075  5.5164354  2.2580030  1.5989110
+ [8]  1.2468744  0.8907975  0.8731609
+
+$u
+             [,1]          [,2]          [,3]         [,4]         [,5]         [,6]
+ [1,] -0.10722393 -0.1385191851  0.0079531967  0.256554719  0.019482599 -0.007256449
+ [2,] -0.06575798 -0.1417006771 -0.0964330922 -0.124416313  0.092434488  0.261546551
+ [3,] -0.05195688 -0.1400704157  0.0234435302 -0.074633529  0.155250950 -0.077496775
+ [4,] -0.03082409 -0.0736111848  0.0005887389  0.067066908 -0.101444840 -0.049212595
+ [5,] -0.07328672 -0.1858402502 -0.2487772674  0.325417704 -0.029917333 -0.083331076
+ [6,] -0.03956989 -0.1021316337  0.0825275150  0.325907555  0.075292857  0.078038758
+ [7,] -0.01483144 -0.2614492304 -0.0250813116 -0.116668048  0.047578711  0.245616272
+ [8,] -0.03557291 -0.1609066020 -0.0231333119  0.082222949 -0.082321226  0.047929776
+ [9,] -0.01291309 -0.1742904229 -0.0039513919  0.098587397  0.129802343  0.138735660
+[10,] -0.20641585 -0.1558069493  0.2348382604 -0.086203783 -0.084786683 -0.069252361
+[11,] -0.20106311 -0.1788032037 -0.0325687451 -0.117234215  0.094889318  0.024029222
+[12,] -0.22437403 -0.1448686610  0.1124844477 -0.145794311 -0.089507356 -0.047469602
+[13,] -0.21217260 -0.0437223321 -0.2634469292 -0.039853440  0.033941381 -0.179842848
+[14,] -0.23017443 -0.1096946503 -0.1214323003 -0.030010529 -0.257683084 -0.177667644
+[15,] -0.23079466  0.0005413024  0.1483452963  0.214164729 -0.060571678  0.124102497
+[16,] -0.20663725 -0.0051106821  0.1849211399 -0.107408470  0.122077291  0.044763090
+[17,] -0.06863243  0.2817985252  0.1417176157  0.187526472  0.204395143  0.261278154
+[18,] -0.07159792  0.2730472331  0.1615327223  0.326955499 -0.052824328 -0.110899334
+[19,] -0.08539970  0.2508502188  0.2431305799  0.003924593  0.091319112 -0.142497021
+[20,] -0.07903754  0.2049340511 -0.0569151036  0.053282350 -0.041015382  0.074180207
+[21,] -0.09335379  0.1534876739  0.0702209601  0.037983865  0.022910171 -0.190054826
+[22,] -0.06620776  0.1370648101 -0.1583876527 -0.006712669 -0.029970965  0.241633200
+[23,] -0.05498620  0.1856610912 -0.3814619777 -0.137771279  0.002149608  0.025965983
+[24,] -0.03820083  0.2254706035 -0.1437666308 -0.382883986  0.208391569  0.154881426
+[25,] -0.05240143  0.1705774888  0.0099070133 -0.185227139 -0.189156589 -0.416002607
+[26,] -0.08576597  0.0527529553 -0.0341889281 -0.326141836 -0.360864336  0.144136147
+[27,]  0.29605163  0.0972608978 -0.2704195832  0.079225689 -0.059078208 -0.032192191
+[28,]  0.27060865 -0.0483462783 -0.0349881100 -0.091757720  0.180641992  0.008057887
+[29,]  0.23001764 -0.0998708785  0.0634594574  0.032641914 -0.255173884 -0.094079724
+[30,]  0.25406241 -0.1528445920  0.2374608785 -0.145354639 -0.177774317 -0.148944782
+[31,]  0.26484980 -0.0305518933  0.3742455781 -0.057997381 -0.038740429  0.182030043
+[32,]  0.29194573 -0.0579781906 -0.1201393050  0.088130310  0.010464343 -0.110030648
+[33,]  0.26637002 -0.1212643279 -0.0710107493  0.059468537 -0.351888523  0.209116725
+[34,]  0.14660953 -0.2901517160 -0.0678664097 -0.051542494  0.493844760 -0.223011106
+[35,]  0.09634712  0.1361545655 -0.0160159408 -0.073889111  0.071230839 -0.129656418
+[36,]  0.09482973  0.0982083095  0.1124684769 -0.104385352  0.044960782  0.149448696
+[37,]  0.07092027  0.1483513705 -0.0545688298  0.108200472 -0.084096721  0.071229536
+[38,]  0.09566584  0.1871110234 -0.1667308051  0.116043751 -0.007104071  0.137586096
+[39,]  0.10923111  0.1060480270 -0.0603703564  0.055096481  0.133775716 -0.289459061
+[40,]  0.15164297  0.1082138098  0.2424093249 -0.112515647  0.119085980 -0.045948859
+               [,7]          [,8]        [,9]        [,10]
+ [1,] -0.0219212684 -0.2738249244 -0.15231186  0.030093649
+ [2,]  0.0539617358 -0.1889297091  0.18388728 -0.173915225
+ [3,] -0.1888646679 -0.2166620582 -0.24614011  0.136332503
+ [4,]  0.0373647340  0.3056244833 -0.25506344 -0.052522430
+ [5,]  0.3102502427  0.0953752158  0.06016606  0.134895593
+ [6,] -0.2092732000  0.0500609253 -0.22629348  0.217957231
+ [7,] -0.2694616488  0.2214256926  0.13048555 -0.150161814
+ [8,] -0.0266871783 -0.0667142272  0.10651838 -0.124200036
+ [9,] -0.0422787444  0.0256701249  0.15751613 -0.350753415
+[10,]  0.3081302372 -0.2068158641 -0.04280094 -0.044362578
+[11,]  0.2869291388  0.0098591552  0.12977172  0.017479486
+[12,]  0.0718878218  0.1478808097  0.11271866  0.094864659
+[13,] -0.1770575024 -0.0464503383  0.12083760  0.014657232
+[14,] -0.2389920440  0.1867760878 -0.06883721 -0.005937593
+[15,] -0.1773045345  0.0894909389 -0.07306648  0.144767417
+[16,] -0.1134180962 -0.0108259067 -0.12050526  0.010359833
+[17,]  0.0195875558 -0.2569492593 -0.31324855 -0.163267186
+[18,] -0.0708844989  0.1751709243  0.31805312  0.190035877
+[19,] -0.1239155303  0.1695598358  0.10803520 -0.269217303
+[20,]  0.1367118403  0.1813972752 -0.04591716 -0.307717704
+[21,]  0.1372198719  0.0047116780  0.12482831 -0.086186057
+[22,]  0.3807181287  0.0189393003 -0.08464621  0.060071301
+[23,]  0.0407714598  0.0209607241 -0.06656565 -0.022315640
+[24,] -0.1985952652  0.1196900020 -0.05003446  0.384080804
+[25,] -0.0160752902 -0.1561059074 -0.17730759 -0.133732737
+[26,] -0.0474000260 -0.1080077179 -0.02023565 -0.025201902
+[27,]  0.0349238216  0.1903120119 -0.41875615 -0.156611131
+[28,]  0.0779347153  0.1213032657  0.13844491  0.055950672
+[29,]  0.1898130617  0.1792587766  0.02916732  0.230838175
+[30,] -0.0353151091 -0.1612163527 -0.05080985  0.030970043
+[31,]  0.0985321866  0.1002589191 -0.03333124 -0.024697977
+[32,] -0.2737154794 -0.0136265418  0.16960468 -0.327330769
+[33,] -0.1058460110 -0.1979808816 -0.03334172  0.086888113
+[34,]  0.0660627510  0.0371784806 -0.09277310  0.108484686
+[35,]  0.0403574223 -0.0502828070  0.09192521  0.040528788
+[36,]  0.1153904751 -0.0002172997  0.05307508 -0.006284148
+[37,] -0.1362336991 -0.3064001924  0.28810454  0.193933572
+[38,]  0.0022582164 -0.0488493640  0.16258574  0.142321799
+[39,]  0.0637393644 -0.2886593346  0.07617734 -0.010899523
+[40,]  0.0006950131  0.1476140593  0.01008327  0.109803734
+
+$v
+             [,1]         [,2]         [,3]         [,4]         [,5]         [,6]
+ [1,] -0.06089445 -0.134246539 -0.807926861 -0.079428073 -0.560978512  0.016908890
+ [2,] -0.20592659 -0.573324219  0.061348011  0.339823780  0.071620951  0.618397319
+ [3,] -0.02935412 -0.311044555  0.549303279 -0.403547520 -0.654391620 -0.052270390
+ [4,] -0.22282423 -0.579018297 -0.082899029  0.002461793  0.264081188 -0.712593076
+ [5,] -0.14848817  0.187469492  0.178766449  0.810592266 -0.412011456 -0.277483918
+ [6,] -0.43753143  0.006355676  0.016954617 -0.039318805  0.061855949 -0.009263169
+ [7,] -0.40064755  0.290817168  0.024559556 -0.094610495 -0.033097636 -0.035381100
+ [8,] -0.43745555 -0.031722430 -0.003784844 -0.064104445 -0.019685502  0.144979477
+ [9,] -0.38171137  0.316117999  0.030003145 -0.207231540 -0.003330244 -0.022363111
+[10,] -0.43852244  0.023865687 -0.033491499 -0.027259719  0.084454841  0.083208466
+               [,7]         [,8]        [,9]       [,10]
+ [1,]  0.0357832278 -0.003306428  0.05318683 -0.01058719
+ [2,]  0.3069105224 -0.031085268  0.07817582 -0.14433701
+ [3,]  0.0089777646  0.055504304  0.04319642  0.04262725
+ [4,]  0.1514559222 -0.013043633 -0.07255638 -0.04803788
+ [5,]  0.0008775397 -0.054012356 -0.01998191  0.06100034
+ [6,] -0.5219896909 -0.212315814  0.66790092 -0.19783222
+ [7,]  0.2443957551  0.554225379 -0.08169347 -0.60781284
+ [8,] -0.4326130675 -0.266928170 -0.72228767 -0.04463036
+ [9,]  0.6014086459 -0.565157946  0.07021525  0.15486606
+[10,] -0.0213606448  0.499956646  0.06430362  0.73257053
+
+
+| Try again. Getting it right on the first try is boring anyway! Or, type info() for more
+| options.
+
+| Type svd2$v[,1:2] at the command prompt.
+
+> svd2$v[,1:2]
+             [,1]         [,2]
+ [1,] -0.06089445 -0.134246539
+ [2,] -0.20592659 -0.573324219
+ [3,] -0.02935412 -0.311044555
+ [4,] -0.22282423 -0.579018297
+ [5,] -0.14848817  0.187469492
+ [6,] -0.43753143  0.006355676
+ [7,] -0.40064755  0.290817168
+ [8,] -0.43745555 -0.031722430
+ [9,] -0.38171137  0.316117999
+[10,] -0.43852244  0.023865687
+
+| You are amazing!
+
+  |                                                                                        |==================================================                              |  63%
+| Seeing the 2 columns side by side, we see that the values in both columns alternately
+| increase and decrease. However, we knew to look for this pattern, so chances are, you
+| might not have noticed this pattern if you hadn't known if was there. This example is
+| meant to show you that it's hard to see patterns, even straightforward ones.
+
+...
+
+  |                                                                                        |===================================================                             |  64%
+| Now look at the entries of the diagonal matrix d resulting from the svd. Recall that we
+| stored this output for you in the svd object svd2.
+
+> svd(d)
+Error: object 'd' not found
+> svd2
+$d
+ [1] 14.0256081  8.4908803  6.4487478  6.1971075  5.5164354  2.2580030  1.5989110
+ [8]  1.2468744  0.8907975  0.8731609
+
+$u
+             [,1]          [,2]          [,3]         [,4]         [,5]         [,6]
+ [1,] -0.10722393 -0.1385191851  0.0079531967  0.256554719  0.019482599 -0.007256449
+ [2,] -0.06575798 -0.1417006771 -0.0964330922 -0.124416313  0.092434488  0.261546551
+ [3,] -0.05195688 -0.1400704157  0.0234435302 -0.074633529  0.155250950 -0.077496775
+ [4,] -0.03082409 -0.0736111848  0.0005887389  0.067066908 -0.101444840 -0.049212595
+ [5,] -0.07328672 -0.1858402502 -0.2487772674  0.325417704 -0.029917333 -0.083331076
+ [6,] -0.03956989 -0.1021316337  0.0825275150  0.325907555  0.075292857  0.078038758
+ [7,] -0.01483144 -0.2614492304 -0.0250813116 -0.116668048  0.047578711  0.245616272
+ [8,] -0.03557291 -0.1609066020 -0.0231333119  0.082222949 -0.082321226  0.047929776
+ [9,] -0.01291309 -0.1742904229 -0.0039513919  0.098587397  0.129802343  0.138735660
+[10,] -0.20641585 -0.1558069493  0.2348382604 -0.086203783 -0.084786683 -0.069252361
+[11,] -0.20106311 -0.1788032037 -0.0325687451 -0.117234215  0.094889318  0.024029222
+[12,] -0.22437403 -0.1448686610  0.1124844477 -0.145794311 -0.089507356 -0.047469602
+[13,] -0.21217260 -0.0437223321 -0.2634469292 -0.039853440  0.033941381 -0.179842848
+[14,] -0.23017443 -0.1096946503 -0.1214323003 -0.030010529 -0.257683084 -0.177667644
+[15,] -0.23079466  0.0005413024  0.1483452963  0.214164729 -0.060571678  0.124102497
+[16,] -0.20663725 -0.0051106821  0.1849211399 -0.107408470  0.122077291  0.044763090
+[17,] -0.06863243  0.2817985252  0.1417176157  0.187526472  0.204395143  0.261278154
+[18,] -0.07159792  0.2730472331  0.1615327223  0.326955499 -0.052824328 -0.110899334
+[19,] -0.08539970  0.2508502188  0.2431305799  0.003924593  0.091319112 -0.142497021
+[20,] -0.07903754  0.2049340511 -0.0569151036  0.053282350 -0.041015382  0.074180207
+[21,] -0.09335379  0.1534876739  0.0702209601  0.037983865  0.022910171 -0.190054826
+[22,] -0.06620776  0.1370648101 -0.1583876527 -0.006712669 -0.029970965  0.241633200
+[23,] -0.05498620  0.1856610912 -0.3814619777 -0.137771279  0.002149608  0.025965983
+[24,] -0.03820083  0.2254706035 -0.1437666308 -0.382883986  0.208391569  0.154881426
+[25,] -0.05240143  0.1705774888  0.0099070133 -0.185227139 -0.189156589 -0.416002607
+[26,] -0.08576597  0.0527529553 -0.0341889281 -0.326141836 -0.360864336  0.144136147
+[27,]  0.29605163  0.0972608978 -0.2704195832  0.079225689 -0.059078208 -0.032192191
+[28,]  0.27060865 -0.0483462783 -0.0349881100 -0.091757720  0.180641992  0.008057887
+[29,]  0.23001764 -0.0998708785  0.0634594574  0.032641914 -0.255173884 -0.094079724
+[30,]  0.25406241 -0.1528445920  0.2374608785 -0.145354639 -0.177774317 -0.148944782
+[31,]  0.26484980 -0.0305518933  0.3742455781 -0.057997381 -0.038740429  0.182030043
+[32,]  0.29194573 -0.0579781906 -0.1201393050  0.088130310  0.010464343 -0.110030648
+[33,]  0.26637002 -0.1212643279 -0.0710107493  0.059468537 -0.351888523  0.209116725
+[34,]  0.14660953 -0.2901517160 -0.0678664097 -0.051542494  0.493844760 -0.223011106
+[35,]  0.09634712  0.1361545655 -0.0160159408 -0.073889111  0.071230839 -0.129656418
+[36,]  0.09482973  0.0982083095  0.1124684769 -0.104385352  0.044960782  0.149448696
+[37,]  0.07092027  0.1483513705 -0.0545688298  0.108200472 -0.084096721  0.071229536
+[38,]  0.09566584  0.1871110234 -0.1667308051  0.116043751 -0.007104071  0.137586096
+[39,]  0.10923111  0.1060480270 -0.0603703564  0.055096481  0.133775716 -0.289459061
+[40,]  0.15164297  0.1082138098  0.2424093249 -0.112515647  0.119085980 -0.045948859
+               [,7]          [,8]        [,9]        [,10]
+ [1,] -0.0219212684 -0.2738249244 -0.15231186  0.030093649
+ [2,]  0.0539617358 -0.1889297091  0.18388728 -0.173915225
+ [3,] -0.1888646679 -0.2166620582 -0.24614011  0.136332503
+ [4,]  0.0373647340  0.3056244833 -0.25506344 -0.052522430
+ [5,]  0.3102502427  0.0953752158  0.06016606  0.134895593
+ [6,] -0.2092732000  0.0500609253 -0.22629348  0.217957231
+ [7,] -0.2694616488  0.2214256926  0.13048555 -0.150161814
+ [8,] -0.0266871783 -0.0667142272  0.10651838 -0.124200036
+ [9,] -0.0422787444  0.0256701249  0.15751613 -0.350753415
+[10,]  0.3081302372 -0.2068158641 -0.04280094 -0.044362578
+[11,]  0.2869291388  0.0098591552  0.12977172  0.017479486
+[12,]  0.0718878218  0.1478808097  0.11271866  0.094864659
+[13,] -0.1770575024 -0.0464503383  0.12083760  0.014657232
+[14,] -0.2389920440  0.1867760878 -0.06883721 -0.005937593
+[15,] -0.1773045345  0.0894909389 -0.07306648  0.144767417
+[16,] -0.1134180962 -0.0108259067 -0.12050526  0.010359833
+[17,]  0.0195875558 -0.2569492593 -0.31324855 -0.163267186
+[18,] -0.0708844989  0.1751709243  0.31805312  0.190035877
+[19,] -0.1239155303  0.1695598358  0.10803520 -0.269217303
+[20,]  0.1367118403  0.1813972752 -0.04591716 -0.307717704
+[21,]  0.1372198719  0.0047116780  0.12482831 -0.086186057
+[22,]  0.3807181287  0.0189393003 -0.08464621  0.060071301
+[23,]  0.0407714598  0.0209607241 -0.06656565 -0.022315640
+[24,] -0.1985952652  0.1196900020 -0.05003446  0.384080804
+[25,] -0.0160752902 -0.1561059074 -0.17730759 -0.133732737
+[26,] -0.0474000260 -0.1080077179 -0.02023565 -0.025201902
+[27,]  0.0349238216  0.1903120119 -0.41875615 -0.156611131
+[28,]  0.0779347153  0.1213032657  0.13844491  0.055950672
+[29,]  0.1898130617  0.1792587766  0.02916732  0.230838175
+[30,] -0.0353151091 -0.1612163527 -0.05080985  0.030970043
+[31,]  0.0985321866  0.1002589191 -0.03333124 -0.024697977
+[32,] -0.2737154794 -0.0136265418  0.16960468 -0.327330769
+[33,] -0.1058460110 -0.1979808816 -0.03334172  0.086888113
+[34,]  0.0660627510  0.0371784806 -0.09277310  0.108484686
+[35,]  0.0403574223 -0.0502828070  0.09192521  0.040528788
+[36,]  0.1153904751 -0.0002172997  0.05307508 -0.006284148
+[37,] -0.1362336991 -0.3064001924  0.28810454  0.193933572
+[38,]  0.0022582164 -0.0488493640  0.16258574  0.142321799
+[39,]  0.0637393644 -0.2886593346  0.07617734 -0.010899523
+[40,]  0.0006950131  0.1476140593  0.01008327  0.109803734
+
+$v
+             [,1]         [,2]         [,3]         [,4]         [,5]         [,6]
+ [1,] -0.06089445 -0.134246539 -0.807926861 -0.079428073 -0.560978512  0.016908890
+ [2,] -0.20592659 -0.573324219  0.061348011  0.339823780  0.071620951  0.618397319
+ [3,] -0.02935412 -0.311044555  0.549303279 -0.403547520 -0.654391620 -0.052270390
+ [4,] -0.22282423 -0.579018297 -0.082899029  0.002461793  0.264081188 -0.712593076
+ [5,] -0.14848817  0.187469492  0.178766449  0.810592266 -0.412011456 -0.277483918
+ [6,] -0.43753143  0.006355676  0.016954617 -0.039318805  0.061855949 -0.009263169
+ [7,] -0.40064755  0.290817168  0.024559556 -0.094610495 -0.033097636 -0.035381100
+ [8,] -0.43745555 -0.031722430 -0.003784844 -0.064104445 -0.019685502  0.144979477
+ [9,] -0.38171137  0.316117999  0.030003145 -0.207231540 -0.003330244 -0.022363111
+[10,] -0.43852244  0.023865687 -0.033491499 -0.027259719  0.084454841  0.083208466
+               [,7]         [,8]        [,9]       [,10]
+ [1,]  0.0357832278 -0.003306428  0.05318683 -0.01058719
+ [2,]  0.3069105224 -0.031085268  0.07817582 -0.14433701
+ [3,]  0.0089777646  0.055504304  0.04319642  0.04262725
+ [4,]  0.1514559222 -0.013043633 -0.07255638 -0.04803788
+ [5,]  0.0008775397 -0.054012356 -0.01998191  0.06100034
+ [6,] -0.5219896909 -0.212315814  0.66790092 -0.19783222
+ [7,]  0.2443957551  0.554225379 -0.08169347 -0.60781284
+ [8,] -0.4326130675 -0.266928170 -0.72228767 -0.04463036
+ [9,]  0.6014086459 -0.565157946  0.07021525  0.15486606
+[10,] -0.0213606448  0.499956646  0.06430362  0.73257053
+
+
+| That's not exactly what I'm looking for. Try again. Or, type info() for more options.
+
+| Type svd2$d at the command prompt.
+
+> svd2$d
+ [1] 14.0256081  8.4908803  6.4487478  6.1971075  5.5164354  2.2580030  1.5989110
+ [8]  1.2468744  0.8907975  0.8731609
+
+| That's a job well done!
+
+  |                                                                                        |====================================================                            |  65%
+| We see that the first element, 14.55, dominates the others. Here's the plot of these
+| diagonal elements of d. The left shows the numerical entries and the right show the
+| percentage of variance each entry explains.
+
+...
+
+  |                                                                                        |=====================================================                           |  66%
+| According to the plot, how much of the variance does the second element account for?
+
+1: 11%
+2: 18%
+3: .1%
+4: 53%
+
+Selection: 2
+
+| You're the best!
+
+  |                                                                                        |======================================================                          |  67%
+| So the first element which showed the difference between the left and right halves of
+| the matrix accounts for roughly 50% of the variation in the matrix, and the second
+| element which picked up the alternating pattern accounts for 18% of the variance. The
+| remaining elements account for smaller percentages of the variation. This indicates
+| that the first pattern is much stronger than the second. Also the two patterns confound
+| each other so they're harder to separate and see clearly. This is what often happens
+| with real data.
+
+...
+
+  |                                                                                        |=======================================================                         |  69%
+| Now you're probably convinced that SVD and PCA are pretty cool and useful as tools for
+| analysis, but one problem with them that you should be aware of, is that they cannot
+| deal with MISSING data. Neither of them will work if any data in the matrix is missing.
+| (You'll get error messages from R in red if you try.) Missing data is not unusual, so
+| luckily we have ways to work around this problem. One we'll just mention is called
+| imputing the data.
+
+...
+
+  |                                                                                        |========================================================                        |  70%
+| This uses the k nearest neighbors to calculate a values to use in place of the missing
+| data. You may want to specify an integer k which indicates how many neighbors you want
+| to average to create this replacement value. The bioconductor package
+| (http://bioconductor.org) has an impute package which you can use to fill in missing
+| data. One specific function in it is impute.knn.
+
+...
+
+  |                                                                                        |=========================================================                       |  71%
+| We'll move on now to a final example of the power of singular value decomposition and
+| principal component analysis and how they work as a data compression technique.
+
+...
+
+  |                                                                                        |==========================================================                      |  72%
+| Consider this low resolution image file showing a face. We'll use SVD and see how the
+| first several components contain most of the information in the file so that storing a
+| huge matrix might not be necessary.
+
+...
+
+  |                                                                                        |===========================================================                     |  73%
+| The image data is stored in the matrix faceData. Run the R command dim on faceData to
+| see how big it is.
+
+> dim(faceData)
+[1] 32 32
+
+| Nice work!
+
+  |                                                                                        |============================================================                    |  75%
+| So it's not that big of a file but we want to show you how to use what you learned in
+| this lesson. We've done the SVD and stored it in the object svd1 for you. Here's the
+| plot of the variance explained.
+
+...
+
+  |                                                                                        |=============================================================                   |  76%
+| According to the plot what percentage of the variance is explained by the first
+| singular value?
+
+1: 15
+2: 23
+3: 100
+4: 40
+
+Selection: 4
+
+| Excellent job!
+
+  |                                                                                        |==============================================================                  |  77%
+| So 40% of the variation in the data matrix is explained by the first component, 22% by
+| the second, and so forth. It looks like most of the variation is contained in the first
+| 10 components. How can we check this out? Can we try to create an approximate image
+| using only a few components?
+
+...
+
+  |                                                                                        |===============================================================                 |  78%
+| Recall that the data matrix X is the product of 3 matrices, that is X=UDV^t. These are
+| precisely what you get when you run svd on the matrix X.
+
+...
+
+  |                                                                                        |================================================================                |  80%
+| Suppose we create the product of pieces of these, say the first columns of U and V and
+| the first element of D. The first column of U can be interpreted as a 32 by 1 matrix
+| (recall that faceData was a 32 by 32 matrix), so we can multiply it by the first
+| element of D, a 1 by 1 matrix, and get a 32 by 1 matrix result. We can multiply that by
+| the transpose of the first column of V, which is the first principal component. (We
+| have to use the transpose of V's column to make it a 1 by 32 matrix in order to do the
+| matrix multiplication properly.)
+
+...
+
+  |                                                                                        |=================================================================               |  81%
+| Alas, that is how we do it in theory, but in R using only one element of d means it's a
+| constant. So we have to do the matrix multiplication with the %*% operator and the
+| multiplication by the constant (svd1$d[1]) with the regular multiplication operator *.
+
+...
+
+  |                                                                                        |==================================================================              |  82%
+| Try this now and put the result in the variable a1. Recall that svd1$u, svd1$d, and
+| svd1$v contain all the information you need. NOTE that because of the peculiarities of
+| R's casting, if you do the scalar multiplication with the * operator first (before the
+| matrix multiplication with the %*% operator) you MUST enclose the 2 arguments
+| (svd1$u[,1] and svd1$d[1]) in parentheses.
+
+> (svd1$d[1]%*%svd1$u[,1])
+          [,1]      [,2]      [,3]     [,4]     [,5]     [,6]     [,7]     [,8]     [,9]
+[1,] -6.265156 -1.095035 0.8317563 2.216994 2.684465 3.181151 3.228345 3.368348 3.397529
+        [,10]      [,11]      [,12]     [,13]    [,14]    [,15]    [,16]    [,17]
+[1,] 2.801821 -0.4159425 -0.5575082 -1.931455 0.380954 2.182363 3.877603 4.394141
+        [,18]    [,19]    [,20]    [,21]    [,22]     [,23]     [,24]     [,25]     [,26]
+[1,] 4.722702 4.538662 2.533498 2.633933 1.561959 0.3594008 -1.735068 -4.765312 -2.842308
+        [,27]     [,28]     [,29]    [,30]     [,31]     [,32]
+[1,] -3.22258 -3.802118 -4.575638 -5.39721 -5.887791 -6.402506
+
+| Keep trying! Or, type info() for more options.
+
+| Type a1 <- (svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1]) OR a1 <- svd1$u[,1] %*%
+| t(svd1$v[,1]) * svd1$d[1] at the command prompt.
+
+> (svd1$d[1] * svd1$u[,1]) %*% t(svd1$v[,1])
+             [,1]        [,2]        [,3]        [,4]        [,5]        [,6]        [,7]
+ [1,] -0.75264555 -0.83256917 -0.84311837 -1.32291352 -1.40830059 -1.62009143 -1.53704150
+ [2,] -0.13154873 -0.14551792 -0.14736173 -0.23122119 -0.24614529 -0.28316247 -0.26864686
+ [3,]  0.09992052  0.11053111  0.11193161  0.17562876  0.18696467  0.21508183  0.20405620
+ [4,]  0.26633191  0.29461376  0.29834671  0.46812751  0.49834266  0.57328718  0.54389905
+ [5,]  0.32249013  0.35673544  0.36125551  0.56683595  0.60342221  0.69416939  0.65858454
+ [6,]  0.38215799  0.42273944  0.42809583  0.67171323  0.71506876  0.82260619  0.78043734
+ [7,]  0.38782746  0.42901095  0.43444680  0.68167836  0.72567709  0.83480987  0.79201544
+ [8,]  0.40464624  0.44761572  0.45328731  0.71124048  0.75714729  0.87101279  0.82636251
+ [9,]  0.40815189  0.45149364  0.45721436  0.71740231  0.76370683  0.87855881  0.83352169
+[10,]  0.33658828  0.37233067  0.37704835  0.59161605  0.62980173  0.72451605  0.68737556
+[11,] -0.04996800 -0.05527411 -0.05597447 -0.08782798 -0.09349681 -0.10755757 -0.10204390
+[12,] -0.06697456 -0.07408660 -0.07502533 -0.11772015 -0.12531836 -0.14416468 -0.13677444
+[13,] -0.23202949 -0.25666876 -0.25992092 -0.40783467 -0.43415824 -0.49945022 -0.47384716
+[14,]  0.04576475  0.05062452  0.05126597  0.08044000  0.08563198  0.09850996  0.09346010
+[15,]  0.26217160  0.29001167  0.29368630  0.46081499  0.49055816  0.56433199  0.53540292
+[16,]  0.46582408  0.51529006  0.52181913  0.81877184  0.87161923  1.00269988  0.95129899
+[17,]  0.52787686  0.58393224  0.59133104  0.92784105  0.98772828  1.13627029  1.07802224
+[18,]  0.56734747  0.62759424  0.63554627  0.99721793  1.06158307  1.22123192  1.15862853
+[19,]  0.54523846  0.60313747  0.61077962  0.95835727  1.02021415  1.17364163  1.11347784
+[20,]  0.30435407  0.33667351  0.34093938  0.53495847  0.56948721  0.65513098  0.62154734
+[21,]  0.31641961  0.35002029  0.35445527  0.55616589  0.59206345  0.68110241  0.64618740
+[22,]  0.18764125  0.20756692  0.21019693  0.32981414  0.35110189  0.40390324  0.38319815
+[23,]  0.04317553  0.04776035  0.04836550  0.07588896  0.08078719  0.09293658  0.08817242
+[24,] -0.20843714 -0.23057113 -0.23349262 -0.36636675 -0.39001379 -0.44866699 -0.42566721
+[25,] -0.57246628 -0.63325662 -0.64128040 -1.00621519 -1.07116106 -1.23225032 -1.16908210
+[26,] -0.34145210 -0.37771098 -0.38249683 -0.60016510 -0.63890258 -0.73498556 -0.69730837
+[27,] -0.38713484 -0.42824479 -0.43367093 -0.68046097 -0.72438112 -0.83331900 -0.79060099
+[28,] -0.45675596 -0.50525899 -0.51166095 -0.80283293 -0.85465155 -0.98318048 -0.93278020
+[29,] -0.54968044 -0.60805115 -0.61575556 -0.96616487 -1.02852570 -1.18320313 -1.12254919
+[30,] -0.64837748 -0.71722885 -0.72631661 -1.13964314 -1.21320107 -1.39565138 -1.32410681
+[31,] -0.70731191 -0.78242154 -0.79233534 -1.24323128 -1.32347528 -1.52250945 -1.44446182
+[32,] -0.76914562 -0.85082139 -0.86160185 -1.35191544 -1.43917442 -1.65560830 -1.57073770
+             [,8]        [,9]       [,10]       [,11]       [,12]       [,13]       [,14]
+ [1,] -1.37800487 -1.46231850 -1.44059635 -1.34778392 -1.46416469 -1.48659763 -1.14974690
+ [2,] -0.24085015 -0.25558664 -0.25179000 -0.23556808 -0.25590932 -0.25983019 -0.20095481
+ [3,]  0.18294264  0.19413604  0.19125223  0.17893054  0.19438114  0.19735931  0.15263932
+ [4,]  0.48762218  0.51745749  0.50977087  0.47692817  0.51811079  0.52604893  0.40685059
+ [5,]  0.59044124  0.62656756  0.61726016  0.57749231  0.62735861  0.63697057  0.49263831
+ [6,]  0.69968602  0.74249652  0.73146704  0.68434125  0.74343393  0.75482432  0.58378737
+ [7,]  0.71006614  0.75351175  0.74231864  0.69449372  0.75446306  0.76602244  0.59244809
+ [8,]  0.74085934  0.78618904  0.77451052  0.72461160  0.78718161  0.79924227  0.61814058
+ [9,]  0.74727777  0.79300018  0.78122049  0.73088926  0.79400135  0.80616650  0.62349584
+[10,]  0.61625328  0.65395891  0.64424462  0.60273826  0.65478454  0.66481671  0.51417474
+[11,] -0.09148548 -0.09708305 -0.09564092 -0.08947912 -0.09720562 -0.09869494 -0.07633148
+[12,] -0.12262248 -0.13012518 -0.12819222 -0.11993326 -0.13028946 -0.13228567 -0.10231083
+[13,] -0.42481852 -0.45081116 -0.44411455 -0.41550185 -0.45138032 -0.45829606 -0.35444996
+[14,]  0.08378984  0.08891655  0.08759573  0.08195225  0.08902881  0.09039285  0.06991057
+[15,]  0.48000515  0.50937440  0.50180785  0.46947818  0.51001749  0.51783163  0.40049527
+[16,]  0.85286873  0.90505176  0.89160758  0.83416451  0.90619439  0.92007849  0.71159631
+[17,]  0.96648002  1.02561438  1.01037929  0.94528420  1.02690923  1.04264283  0.80638859
+[18,]  1.03874603  1.10230201  1.08592776  1.01596534  1.10369367  1.12060372  0.86668418
+[19,]  0.99826705  1.05934631  1.04361015  0.97637411  1.06068374  1.07693482  0.83291029
+[20,]  0.55723626  0.59133092  0.58254694  0.54501554  0.59207748  0.60114889  0.46493352
+[21,]  0.57932683  0.61477311  0.60564091  0.56662165  0.61554927  0.62498030  0.48336493
+[22,]  0.34354890  0.36456904  0.35915351  0.33601455  0.36502931  0.37062204  0.28664215
+[23,]  0.07904928  0.08388593  0.08263984  0.07731565  0.08399184  0.08527870  0.06595525
+[24,] -0.38162371 -0.40497347 -0.39895775 -0.37325434 -0.40548475 -0.41169731 -0.31841011
+[25,] -1.04811797 -1.11224737 -1.09572539 -1.02513175 -1.11365159 -1.13071421 -0.87450372
+[26,] -0.62515835 -0.66340885 -0.65355418 -0.61144803 -0.66424640 -0.67442354 -0.52160474
+[27,] -0.70879805 -0.75216606 -0.74099294 -0.69325344 -0.75311568 -0.76465441 -0.59139004
+[28,] -0.83626607 -0.88743325 -0.87425079 -0.81792596 -0.88855364 -0.90216746 -0.69774377
+[29,] -1.00639979 -1.06797666 -1.05211230 -0.98432850 -1.06932499 -1.08570846 -0.83969590
+[30,] -1.18710238 -1.25973559 -1.24102273 -1.16106810 -1.26132602 -1.28065120 -0.99046623
+[31,] -1.29500434 -1.37423956 -1.35382579 -1.26660367 -1.37597455 -1.39705630 -1.08049489
+[32,] -1.40821454 -1.49437656 -1.47217820 -1.37733106 -1.49626322 -1.51918795 -1.17495252
+            [,15]       [,16]       [,17]       [,18]       [,19]       [,20]       [,21]
+ [1,] -1.05024024 -0.78533750 -1.01445059 -1.30451414 -0.99473940 -0.74926804 -0.73546159
+ [2,] -0.18356286 -0.13726269 -0.17730748 -0.22800531 -0.17386233 -0.13095840 -0.12854529
+ [3,]  0.13942891  0.10426067  0.13467751  0.17318608  0.13206067  0.09947213  0.09763919
+ [4,]  0.37163906  0.27790032  0.35897450  0.46161668  0.35199948  0.26513674  0.26025118
+ [5,]  0.45000215  0.33649783  0.43466716  0.55895227  0.42622140  0.32104295  0.31512723
+ [6,]  0.53326257  0.39875743  0.51509027  0.66237089  0.50508186  0.38044305  0.37343279
+ [7,]  0.54117373  0.40467315  0.52273184  0.67219742  0.51257495  0.38608707  0.37897281
+ [8,]  0.56464263  0.42222247  0.54540097  0.70134838  0.53480361  0.40283038  0.39540760
+ [9,]  0.56953441  0.42588040  0.55012605  0.70742451  0.53943688  0.40632030  0.39883321
+[10,]  0.46967467  0.35120834  0.45366930  0.58338771  0.44485432  0.33507783  0.32890349
+[11,] -0.06972525 -0.05213841 -0.06734918 -0.08660645 -0.06604056 -0.04974376 -0.04882716
+[12,] -0.09345618 -0.06988367 -0.09027142 -0.11608287 -0.08851741 -0.06667401 -0.06544543
+[13,] -0.32377353 -0.24210794 -0.31274011 -0.40216241 -0.30666344 -0.23098825 -0.22673193
+[14,]  0.06386005  0.04775259  0.06168386  0.07932123  0.06048532  0.04555938  0.04471988
+[15,]  0.36583377  0.27355930  0.35336704  0.45440587  0.34650098  0.26099510  0.25618585
+[16,]  0.65001008  0.48605764  0.62785931  0.80738417  0.61565975  0.46373369  0.45518867
+[17,]  0.73659842  0.55080575  0.71149692  0.91493642  0.69767225  0.52550800  0.51582469
+[18,]  0.79167563  0.59199080  0.76469724  0.98334839  0.74983886  0.56480148  0.55439413
+[19,]  0.76082476  0.56892147  0.73489769  0.94502821  0.72061833  0.54279169  0.53278990
+[20,]  0.42469512  0.31757401  0.41022254  0.52751815  0.40225174  0.30298827  0.29740524
+[21,]  0.44153135  0.33016363  0.42648503  0.54843060  0.41819825  0.31499967  0.30919530
+[22,]  0.26183425  0.19579164  0.25291158  0.32522700  0.24799740  0.18679920  0.18335713
+[23,]  0.06024705  0.04505090  0.05819398  0.07483348  0.05706325  0.04298178  0.04218977
+[24,] -0.29085280 -0.21749082 -0.28094124 -0.36127124 -0.27548244 -0.20750177 -0.20367822
+[25,] -0.79881841 -0.59733196 -0.77159661 -0.99222052 -0.75660418 -0.56989733 -0.55939607
+[26,] -0.47646163 -0.35628343 -0.46022497 -0.59181787 -0.45128262 -0.33991982 -0.33365626
+[27,] -0.54020726 -0.40395045 -0.52179830 -0.67099696 -0.51165955 -0.38539757 -0.37829601
+[28,] -0.63735644 -0.47659563 -0.61563687 -0.79166695 -0.60367480 -0.45470626 -0.44632758
+[29,] -0.76702310 -0.57355639 -0.74088480 -0.95272723 -0.72648911 -0.54721374 -0.53713047
+[30,] -0.90474476 -0.67654044 -0.87391325 -1.12379272 -0.85693276 -0.64546787 -0.63357411
+[31,] -0.98698176 -0.73803475 -0.95334781 -1.22594013 -0.93482387 -0.70413783 -0.69116298
+[32,] -1.07326440 -0.80255427 -1.03669015 -1.33311269 -1.01654684 -0.76569406 -0.75158494
+            [,22]       [,23]       [,24]       [,25]       [,26]       [,27]       [,28]
+ [1,] -0.77189348 -0.85081771 -0.66740110 -0.61772541 -0.61100465 -0.89162078 -1.16955583
+ [2,] -0.13491292 -0.14870744 -0.11664956 -0.10796715 -0.10679248 -0.15583907 -0.20441705
+ [3,]  0.10247586  0.11295377  0.08860355  0.08200865  0.08111641  0.11837074  0.15526914
+ [4,]  0.27314300  0.30107121  0.23616722  0.21858893  0.21621072  0.31550983  0.41386020
+ [5,]  0.33073740  0.36455449  0.28596498  0.26468017  0.26180048  0.38203761  0.50112595
+ [6,]  0.39193119  0.43200519  0.33887487  0.31365189  0.31023941  0.45272308  0.59384541
+ [7,]  0.39774564  0.43841416  0.34390222  0.31830504  0.31484193  0.45943940  0.60265534
+ [8,]  0.41499454  0.45742672  0.35881611  0.33210887  0.32849557  0.47936375  0.62879049
+ [9,]  0.41858984  0.46138964  0.36192471  0.33498609  0.33134149  0.48351672  0.63423802
+[10,]  0.34519609  0.38049154  0.29846637  0.27625106  0.27324549  0.39873896  0.52303343
+[11,] -0.05124586 -0.05648563 -0.04430863 -0.04101067 -0.04056448 -0.05919454 -0.07764659
+[12,] -0.06868735 -0.07571046 -0.05938904 -0.05496862 -0.05437057 -0.07934134 -0.10407354
+[13,] -0.23796334 -0.26229451 -0.20574989 -0.19043561 -0.18836369 -0.27487350 -0.36055676
+[14,]  0.04693513  0.05173413  0.04058145  0.03756091  0.03715225  0.05421517  0.07111506
+[15,]  0.26887630  0.29636824  0.23247811  0.21517440  0.21283334  0.31058132  0.40739538
+[16,]  0.47773693  0.52658437  0.41306497  0.38231990  0.37816032  0.55183803  0.72385637
+[17,]  0.54137663  0.59673107  0.46808966  0.43324902  0.42853534  0.62534879  0.82028182
+[18,]  0.58185664  0.64135007  0.50308984  0.46564408  0.46057794  0.67210760  0.88161624
+[19,]  0.55918223  0.61635725  0.48348489  0.44749836  0.44262964  0.64591619  0.84726046
+[20,]  0.31213753  0.34405283  0.26988300  0.24979519  0.24707746  0.36055274  0.47294384
+[21,]  0.32451163  0.35769215  0.28058200  0.25969785  0.25687238  0.37484617  0.49169280
+[22,]  0.19243993  0.21211644  0.16638905  0.15400445  0.15232891  0.22228901  0.29158069
+[23,]  0.04427969  0.04880718  0.03828548  0.03543583  0.03505029  0.05114784  0.06709159
+[24,] -0.21376764 -0.23562487 -0.18482960 -0.17107245 -0.16921120 -0.24692484 -0.32389598
+[25,] -0.58710636 -0.64713656 -0.50762890 -0.46984529 -0.46473344 -0.67817160 -0.88957050
+[26,] -0.35018429 -0.38598978 -0.30277932 -0.28024298 -0.27719398 -0.40450088 -0.53059144
+[27,] -0.39703531 -0.43763121 -0.34328805 -0.31773659 -0.31427966 -0.45861890 -0.60157907
+[28,] -0.46843690 -0.51633343 -0.40502389 -0.37487734 -0.37079873 -0.54109548 -0.70976516
+[29,] -0.56373781 -0.62137862 -0.48742377 -0.45114407 -0.44623569 -0.65117838 -0.85416298
+[30,] -0.66495889 -0.73294932 -0.57494241 -0.53214856 -0.52635886 -0.76809972 -1.00753092
+[31,] -0.72540049 -0.79957093 -0.62720194 -0.58051833 -0.57420238 -0.83791633 -1.09911068
+[32,] -0.78881552 -0.86946998 -0.68203238 -0.63126765 -0.62439955 -0.91116757 -1.19519572
+            [,29]       [,30]       [,31]       [,32]
+ [1,] -1.26690353 -0.86874954 -0.82207419 -0.83390028
+ [2,] -0.22143166 -0.15184159 -0.14368359 -0.14575058
+ [3,]  0.16819293  0.11533438  0.10913780  0.11070782
+ [4,]  0.44830775  0.30741658  0.29090000  0.29508479
+ [5,]  0.54283705  0.37223784  0.35223860  0.35730579
+ [6,]  0.64327399  0.44111013  0.41741059  0.42341532
+ [7,]  0.65281722  0.44765418  0.42360304  0.42969685
+ [8,]  0.68112772  0.46706744  0.44197329  0.44833137
+ [9,]  0.68702867  0.47111388  0.44580232  0.45221549
+[10,]  0.56656799  0.38851078  0.36763724  0.37292595
+[11,] -0.08410949 -0.05767612 -0.05457735 -0.05536248
+[12,] -0.11273607 -0.07730613 -0.07315270 -0.07420505
+[13,] -0.39056762 -0.26782263 -0.25343331 -0.25707912
+[14,]  0.07703431  0.05282448  0.04998637  0.05070546
+[15,]  0.44130484  0.30261450  0.28635591  0.29047534
+[16,]  0.78410638  0.53768266  0.50879455  0.51611391
+[17,]  0.88855778  0.60930777  0.57657146  0.58486583
+[18,]  0.95499736  0.65486716  0.61968307  0.62859764
+[19,]  0.91778199  0.62934759  0.59553460  0.60410176
+[20,]  0.51230921  0.35130409  0.33242955  0.33721178
+[21,]  0.53261873  0.36523087  0.34560809  0.35057990
+[22,]  0.31585035  0.21658701  0.20495042  0.20789877
+[23,]  0.07267595  0.04983584  0.04715830  0.04783671
+[24,] -0.35085538 -0.24059089 -0.22766465 -0.23093976
+[25,] -0.96361369 -0.66077561 -0.62527408 -0.63426907
+[26,] -0.57475509 -0.39412490 -0.37294973 -0.37831486
+[27,] -0.65165136 -0.44685472 -0.42284653 -0.42892947
+[28,] -0.76884230 -0.52721567 -0.49888993 -0.50606680
+[29,] -0.92525903 -0.63447480 -0.60038633 -0.60902330
+[30,] -1.09139252 -0.74839696 -0.70818779 -0.71837555
+[31,] -1.19059490 -0.81642268 -0.77255869 -0.78367247
+[32,] -1.29467755 -0.88779493 -0.84009632 -0.85218168
+
+| Not quite right, but keep trying. Or, type info() for more options.
+
+| Type a1 <- (svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1]) OR a1 <- svd1$u[,1] %*%
+| t(svd1$v[,1]) * svd1$d[1] at the command prompt.
+
+> al<-(svd1$d[1] * svd1$u[,1]) %*% t(svd1$v[,1])
+
+| You almost had it, but not quite. Try again. Or, type info() for more options.
+
+| Type a1 <- (svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1]) OR a1 <- svd1$u[,1] %*%
+| t(svd1$v[,1]) * svd1$d[1] at the command prompt.
+
+> al<-(svd1$u[,1] * svd1$d1]) %*% t(svd1$v[,1])
+Error: unexpected ']' in "al<-(svd1$u[,1] * svd1$d1]"
+> al<-(svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1])
+
+| You're close...I can feel it! Try it again. Or, type info() for more options.
+
+| Type a1 <- (svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1]) OR a1 <- svd1$u[,1] %*%
+| t(svd1$v[,1]) * svd1$d[1] at the command prompt.
+
+> al <- (svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1])
+
+| One more time. You can do it! Or, type info() for more options.
+
+| Type a1 <- (svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1]) OR a1 <- svd1$u[,1] %*%
+| t(svd1$v[,1]) * svd1$d[1] at the command prompt.
+
+> a1 <- (svd1$u[,1] * svd1$d[1]) %*% t(svd1$v[,1])
+
+| You're the best!
+
+  |                                                                                        |===================================================================             |  83%
+| Now to look at it as an image. We wrote a function for you called myImage which takes a
+| single argument, a matrix of data to display using the R function image. Run it now
+| with a1 as its argument.
+
+> myImage(a1)
+
+| All that hard work is paying off!
+
+  |                                                                                        |===================================================================             |  84%
+| It might not look like much but it's a good start. Now we'll try the same experiment
+| but this time we'll use 2 elements from each of the 3 SVD terms.
+
+...
+
+  |                                                                                        |====================================================================            |  86%
+| Create the matrix a2 as the product of the first 2 columns of svd1$u, a diagonal matrix
+| using the first 2 elements of svd1$d, and the transpose of the first 2 columns of
+| svd1$v. Since all of your multiplicands are matrices you have to use only the operator
+| %*% AND you DON'T need parentheses. Also, you must use the R function diag with
+| svd1$d[1:2] as its sole argument to create the proper diagonal matrix. Remember, matrix
+| multiplication is NOT commutative so you have to put the multiplicands in the correct
+| order. Please use the 1:2 notation and not the c(m:n), i.e., the concatenate function,
+| when specifying the columns.
+
+> a2 <- (svd1$u[,1:2] * svd1$d[1:2]) * svd1$v[,1:2]
+
+| Not quite, but you're learning! Try again. Or, type info() for more options.
+
+| Type a2 <- svd1$u[,1:2] %*% diag(svd1$d[1:2]) %*% t(svd1$v[,1:2]) at the command
+| prompt.
+
+> a2 <- (svd1$u[,1:2] * svd1$d[1:2]) %*% svd1$v[,1:2]
+Error in (svd1$u[, 1:2] * svd1$d[1:2]) %*% svd1$v[, 1:2] : 
+  non-conformable arguments
+> a2 <- (svd1$u[,1:2] * svd1$d[1:2]) %*% t(svd1$v[,1:2])
+
+| Nice try, but that's not exactly what I was hoping for. Try again. Or, type info() for
+| more options.
+
+| Type a2 <- svd1$u[,1:2] %*% diag(svd1$d[1:2]) %*% t(svd1$v[,1:2]) at the command
+| prompt.
+
+> a2 <- (svd1$u[,1:2] * diag(svd1$d[1:2])) %*% t(svd1$v[,1:2])
+Error in svd1$u[, 1:2] * diag(svd1$d[1:2]) : non-conformable arrays
+> a2 <- svd1$u[,1:2] %*% diag(svd1$d[1:2]) %*% t(svd1$v[,1:2])
+
+| Keep up the great work!
+
+  |                                                                                        |=====================================================================           |  87%
+| Use myImage again to see how a2 displays.
+
+> myImage(a2)
+
+| You got it right!
+
+  |                                                                                        |======================================================================          |  88%
+| We're starting to see slightly more detail, and maybe if you squint you see a grimacing
+| mouth. Now let's see what image results using 5 components. From our plot of the
+| variance explained 5 components covered a sizeable percentage of the variation. To save
+| typing, use the up arrow to recall the command which created a2 and replace the a2 and
+| assignment arrow with the call to myImage, and change the three occurrences of 2 to 5.
+
+> a2 <- svd1$u[,1:5] %*% diag(svd1$d[1:5]) %*% t(svd1$v[,1:5])
+
+| Not quite right, but keep trying. Or, type info() for more options.
+
+| Type myImage(svd1$u[,1:5] %*% diag(svd1$d[1:5]) %*% t(svd1$v[,1:5])) at the command
+| prompt.
+
+> myImage(svd1$u[,1:5] %*% diag(svd1$d[1:5]) %*% t(svd1$v[,1:5]))
+
+| Perseverance, that's the answer.
+
+  |                                                                                        |=======================================================================         |  89%
+| Certainly much better. Clearly a face is appearing with eyes, nose, ears, and mouth
+| recognizable. Again, use the up arrow to recall the last command (calling myImage with
+| a matrix product argument) and change the 5's to 10's. We'll see how this image looks.
+
+> a2 <- svd1$u[,1:5] %*% diag(svd1$d[1:5]) %*% t(svd1$v[,1:5])
+
+| Almost! Try again. Or, type info() for more options.
+
+| Type myImage(svd1$u[,1:10] %*% diag(svd1$d[1:10]) %*% t(svd1$v[,1:10])) at the command
+| prompt.
+
+> myImage(a2)
+
+| You almost had it, but not quite. Try again. Or, type info() for more options.
+
+| Type myImage(svd1$u[,1:10] %*% diag(svd1$d[1:10]) %*% t(svd1$v[,1:10])) at the command
+| prompt.
+
+> myImage(svd1$u[,1:5] %*% diag(svd1$d[1:5]) %*% t(svd1$v[,1:5]))
+
+| That's not exactly what I'm looking for. Try again. Or, type info() for more options.
+
+| Type myImage(svd1$u[,1:10] %*% diag(svd1$d[1:10]) %*% t(svd1$v[,1:10])) at the command
+| prompt.
+
+> myImage(svd1$u[,1:10] %*% diag(svd1$d[1:10]) %*% t(svd1$v[,1:10]))
+
+| You nailed it! Good job!
+
+  |                                                                                        |========================================================================        |  90%
+| Now that's pretty close to the original which was low resolution to begin with, but you
+| can see that 10 components really do capture the essence of the image. Singular value
+| decomposition is a good way to approximate data without having to store a lot.
+
+...
+
+  |                                                                                        |=========================================================================       |  92%
+| We'll close now with a few comments. First, when reducing dimensions you have to pay
+| attention to the scales on which different variables are measured and make sure that
+| all your data is in consistent units. In other words, scales of your data matter.
+| Second, principal components and singular values may mix real patterns, as we saw in
+| our simple 2-pattern example, so finding and separating out the real patterns require
+| some detective work. Let's do a quick review now.
+
+...
+
+  |                                                                                        |==========================================================================      |  93%
+| Which of the following cliches LEAST captures the essence of dimension reduction?
+
+1: see the forest through the trees
+2: find the needle in the haystack
+3: a face that could launch a 1000 ships
+4: separate the wheat from the chaff
+
+Selection: 
+Enter an item from the menu, or 0 to exit
+Selection: 1
+
+| Not quite right, but keep trying.
+
+| Which choice fails to deal with discerning differences between the valuable and the
+| invaluable.
+
+1: a face that could launch a 1000 ships
+2: see the forest through the trees
+3: find the needle in the haystack
+4: separate the wheat from the chaff
+
+Selection: 3
+
+| Not quite, but you're learning! Try again.
+
+| Which choice fails to deal with discerning differences between the valuable and the
+| invaluable.
+
+1: a face that could launch a 1000 ships
+2: see the forest through the trees
+3: find the needle in the haystack
+4: separate the wheat from the chaff
+
+Selection: 4
+
+| Almost! Try again.
+
+| Which choice fails to deal with discerning differences between the valuable and the
+| invaluable.
+
+1: separate the wheat from the chaff
+2: a face that could launch a 1000 ships
+3: find the needle in the haystack
+4: see the forest through the trees
+
+Selection: 2
+
+| Keep up the great work!
+
+  |                                                                                        |===========================================================================     |  94%
+| A matrix X has the singular value decomposition UDV^t. The principal components of X
+| are ?
+
+1: the rows of V
+2: the columns of U
+3: the columns of V
+4: the rows of U
+
+Selection: 2
+
+| That's not exactly what I'm looking for. Try again.
+
+| Recall the simple example where we ran prcomp and svd on the same scaled matrix and saw
+| that the columns of V matched the rotations of the prcomp output.
+
+1: the rows of U
+2: the rows of V
+3: the columns of V
+4: the columns of U
+
+Selection: 3
+
+| You nailed it! Good job!
+
+  |                                                                                        |============================================================================    |  95%
+| A matrix X has the singular value decomposition UDV^t. The singular values of X are
+| found where?
+
+1: the columns of D
+2: the diagonal elements of D
+3: the columns of V
+4: the columns of U
+
+Selection: 2
+
+| You are amazing!
+
+  |                                                                                        |=============================================================================   |  96%
+| True or False? PCA and SVD are totally unrelated.
+
+1: False
+2: True
+
+Selection: 1
+
+| Keep up the great work!
+
+  |                                                                                        |==============================================================================  |  98%
+| True or False? D gives the singular values of a matrix in decreasing order of weight.
+
+1: False
+2: True
+
+Selection: 1
+
+| You almost had it, but not quite. Try again.
+
+| Recall that the first value accounted for the highest percentage of variation in the
+| data.
+
+1: True
+2: False
+
+Selection: 2
+
+| Nice try, but that's not exactly what I was hoping for. Try again.
+
+| Recall that the first value accounted for the highest percentage of variation in the
+| data.
+
+1: True
+2: False
+
+Selection: 1
+
+| You got it right!
+
+  |                                                                                        |=============================================================================== |  99%
+| Congratulations! We hope you enjoyed making faces and that this lesson didn't reduce
+| the dimensions of your understanding.
+
+...
+
+  |                                                                                        |================================================================================| 100%
+| Would you like to receive credit for completing this course on Coursera.org?
+
+1: Yes
+2: No
+
+Selection: 2
+
+| Your dedication is inspiring!
+
+| You've reached the end of this lesson! Returning to the main menu...
+
+| Please choose a course, or type 0 to exit swirl.
+
+1: Exploratory Data Analysis
+2: Take me to the swirl course repository!
+
+Selection: 1
+
+| Please choose a lesson, or type 0 to return to course menu.
+
+ 1: Principles of Analytic Graphs   2: Exploratory Graphs           
+ 3: Graphics Devices in R           4: Plotting Systems             
+ 5: Base Plotting System            6: Lattice Plotting System      
+ 7: Working with Colors             8: GGPlot2 Part1                
+ 9: GGPlot2 Part2                  10: GGPlot2 Extras               
+11: Hierarchical Clustering        12: K Means Clustering           
+13: Dimension Reduction            14: Clustering Example           
+15: CaseStudy                      
+
+Selection: 
